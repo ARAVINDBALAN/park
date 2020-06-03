@@ -21,11 +21,13 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.media.Image;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Looper;
 import android.provider.Settings;
 import android.util.Log;
+import android.widget.ListView;
 import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -41,6 +43,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.FormBody;
@@ -55,13 +59,19 @@ public class showAvailAlloc extends AppCompatActivity  {
     String latitude, longitude;
     int PERMISSION_ID = 44;
     FusedLocationProviderClient mFusedLocationClient;
+    ListView listView;
 
+    ListAdapter adapter;
+    ArrayList<LocationPlaces> list = new ArrayList<>();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_show_avail_alloc);
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         getLastLocation();
+        listView = (ListView) findViewById(R.id.list);
+
+
         SharedPreferences sharedPreferences = getSharedPreferences("userdata",Context.MODE_PRIVATE);
         String url = "http://vast-ridge-62077.herokuapp.com/api/driver/location/nearest";
         new ShowAvailTask().execute(url,sharedPreferences.getString("token",null),sharedPreferences.getString("latitide",null),sharedPreferences.getString("longitude",null));
@@ -220,14 +230,25 @@ public class showAvailAlloc extends AppCompatActivity  {
                 Toast.makeText(getApplicationContext(), "Request timed out", Toast.LENGTH_SHORT).show();
             } else {
                 try {
-                    JSONArray profileResp = new JSONArray(s);
-                    if(profileResp.toString().contains("Unable to login with given Credentials")){
+                    JSONArray locationResult = new JSONArray(s);
+                    if(locationResult.toString().contains("Unable to login with given Credentials")){
                         Toast.makeText(getApplicationContext(),";jfjgdjgf",Toast.LENGTH_LONG).show();
                     }
                     else {
+                        for(int i=0;i<locationResult.length();i++){
+                            JSONObject obj = locationResult.getJSONObject(i);
+                            String name = obj.getString("name");
+                            String latitude = obj.getString("latitude");
+                            String longitude = obj.getString("longitude");
+                            String spots = obj.getString("address");
+                            LocationPlaces places = new LocationPlaces(name,latitude,longitude,spots,"3");
+                            list.add(places);
+                            adapter = new ListAdapter(getApplicationContext(),list);
+                            listView.setAdapter(adapter);
+                        }
 
 
-                        Toast.makeText(getApplicationContext(), profileResp.toString(), Toast.LENGTH_LONG).show();
+                        Toast.makeText(getApplicationContext(), locationResult.toString(), Toast.LENGTH_LONG).show();
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();
